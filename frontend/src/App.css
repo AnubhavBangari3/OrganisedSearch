@@ -1,0 +1,42 @@
+.login{
+height:100vh;
+display: flex;
+justify-content:center;
+text-align:center;
+margin-top:100px;
+}
+
+#Username{
+  width:600px !important;
+}
+#Password{
+  width:600px !important;
+}
+#loginbtn{
+margin-top:25px !important;
+
+width:900px !important}
+
+#registerpagebtn{
+  margin-top:25px !important;
+
+  width:900px !important}
+
+  .register{
+    height:100vh;
+    display: flex;
+    justify-content:center;
+    text-align:center;
+    margin-top:100px;
+    direction:column;
+    }
+
+    #registerbtn{
+      margin-top:25px !important;
+    
+      width:900px !important}
+
+      #loginbtnpg{
+        margin-top:25px !important;
+      
+        width:900px !important}
