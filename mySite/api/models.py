@@ -39,4 +39,4 @@ class Profile(models.Model):
         super().save(*args,**kwargs)
     
     def __str__(self):
-        return str(self.username.username)
+        return str(self.username.id)

@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,login
 
 from django.contrib.auth.models import User
 from .models import Profile
-from .serializers import RealizerSerializer,LoginSerializer
+from .serializers import RealizerSerializer,LoginSerializer,ProfileSerializer
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -16,7 +16,20 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 import requests
 
+from rest_framework.permissions import IsAuthenticated
+
 # Create your views here.
+class GetSingleProfile(APIView):
+      permission_classes=[IsAuthenticated]
+      serializer_class=ProfileSerializer
+      
+      def get(self,request):
+            user=User.objects.get(username=self.request.user)
+            profile=Profile.objects.get(username_id=request.user.id)
+            print(profile)
+            serializer=ProfileSerializer(profile,many=False)
+            return Response(serializer.data)
+      
 class RegisterView(viewsets.ModelViewSet):
     queryset=User.objects.all()
     serializer_class=RealizerSerializer
