@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate,login
 
 from django.contrib.auth.models import User
-from .models import Profile
-from .serializers import RealizerSerializer,LoginSerializer,ProfileSerializer
+from .models import Profile,UploadFile
+from .serializers import RealizerSerializer,LoginSerializer,ProfileSerializer,UploadFileSerializer
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -19,6 +19,36 @@ import requests
 from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
+
+class PostFile(APIView):
+     permission_classes=[IsAuthenticated]
+     serializer_class=UploadFileSerializer
+
+     def post(self,request):
+            profile=Profile.objects.get(username_id=request.user.id)
+            ##print("post profile:",profile)
+            serializer=UploadFileSerializer(data=request.data)
+            ##print("serializer:",serializer)
+            if serializer.is_valid(raise_exception=True):
+                  ##print("serializer 1:",serializer)
+                  serializer.save(postUser=profile)
+                  return Response(serializer.data,status=status.HTTP_200_OK)
+            else:
+                  ##print("serializer 2:",serializer)
+                  return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            
+class GetAllFile(APIView):
+     permission_classes=[IsAuthenticated]
+     serializer_class=UploadFileSerializer
+
+     def get(self,request):
+          profile=Profile.objects.get(username_id=request.user.id)
+          files=UploadFile.objects.filter(postUser=profile)
+          serializer=UploadFileSerializer(files,many=True)
+          print("serializer get:",serializer)
+          return Response(serializer.data)
+     
+
 class GetSingleProfile(APIView):
       permission_classes=[IsAuthenticated]
       serializer_class=ProfileSerializer

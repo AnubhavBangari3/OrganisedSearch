@@ -40,3 +40,10 @@ class Profile(models.Model):
     
     def __str__(self):
         return str(self.username.id)
+    
+class UploadFile(models.Model):
+    postUser=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="profile_posts")
+    file=models.FileField(upload_to="ProfileFiles/")
+
+    def __str__(self):
+        return f"{self.file} by {self.postUser}"

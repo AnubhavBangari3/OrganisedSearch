@@ -17,37 +17,37 @@ export default function Login() {
         const [loginError, setLoginError] = useState(false);
 
 
-        const loginBtn = () =>{
+        const loginBtn  =async () =>{
 
-        fetch('http://127.0.0.1:8000/api/token/',{
+                const response = await fetch('http://127.0.0.1:8000/api/token/',{
                 method:'POST',
                 headers:{
                         'Content-Type':'application/json',
                 },
                 body:JSON.stringify({username,password})
                 })
-                .then(resp => resp.json())
-                .then(resp =>{
-                        console.log("resp:",resp)
-                        if (resp.access) 
-                        {
-                                setToken("access_token", resp.access);
-                                setTokenR("refresh_token", resp.refresh);
-                                if (token['access_token']){
-                                        history.push('/main/')
-                                        window.location.reload()}
-                                else{
-                                    
-                                window.location.reload()
-                                }
-                        }
-                })
-                .catch(error=>{
-                        console.log(error)
-                    
+                const resp = await response.json();
+                
+              
+                console.log("resp:",resp)
+                if (response.ok && resp.access) 
+                {
+                        setToken("access_token", resp.access);
+                        setTokenR("refresh_token", resp.refresh);
+                        history.push('/main/')
+                        setTimeout(() => {
+                                
+                                window.location.reload();
+                                }, 5000);
+                
+                     
+                }
+                else{
                         setUsername('');
                         setPassword('');
-                })
+                }
+              
+               
         }
 
 
