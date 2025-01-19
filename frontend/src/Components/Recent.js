@@ -17,10 +17,54 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import DirectionsIcon from '@mui/icons-material/Directions';
 
+import Backdrop from '@mui/material/Backdrop';
+import Box from '@mui/material/Box';
+import Modal from '@mui/material/Modal';
+import Fade from '@mui/material/Fade';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
   const [loading, setLoading] = useState(true); // State to manage loading
   const [token] = useCookies(["access_token"]); // Authentication token
+  const [searchResults, setSearchResults] = useState([]);
+
+  const [searchText,setsearchText]=useState("")
+
+  //for modal start
+  const style = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    height:'60%',
+    transform: 'translate(-50%, -50%)',
+    width: '60%',
+    bgcolor: 'background.paper',
+    border: '2px solid #000',
+    boxShadow: 24,
+    p: 4,
+  };
+
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => {
+    fetch(`http://127.0.0.1:8000/search/?q=${searchText}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token["access_token"]}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setSearchResults(data); // Set search results
+        setOpen(true); // Open modal
+      })
+      .catch((error) => console.error('Error fetching search results:', error));
+  };
+  const handleClose = () => setOpen(false);
+
+
+  //for modal end
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -69,17 +113,55 @@ export default function Recent() {
             sx={{ ml: 1, flex: 1 }}
             placeholder="Search Text"
             inputProps={{ 'aria-label': 'search google maps' }}
+            value={searchText}
+            onChange={e => setsearchText(e.target.value)}
           />
           <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
-            <SearchIcon />
+            <SearchIcon onClick={handleOpen} />
           </IconButton>
           
-          {/*<Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
-           <IconButton color="primary" sx={{ p: '10px' }} aria-label="directions">
-            <DirectionsIcon />
-          </IconButton> */}
+  
         </Paper>
         
+      </div>
+
+      <div className="forModal">
+        <Modal
+          aria-labelledby="transition-modal-title"
+          aria-describedby="transition-modal-description"
+          open={open}
+          onClose={handleClose}
+          closeAfterTransition
+          slots={{ backdrop: Backdrop }}
+          slotProps={{
+            backdrop: {
+              timeout: 500,
+            },
+          }}
+        >
+          <Fade in={open}>
+            <Box sx={style}>
+              <Typography id="transition-modal-title" variant="h6" component="h2">
+                Search Results
+              </Typography>
+              <Typography id="transition-modal-description" sx={{ mt: 2 }}>
+                <b>Search Text: {searchText}</b>
+              </Typography>
+              {searchResults.length > 0 ? (
+                <ul>
+                  {searchResults.map((result, index) => (
+                    <li key={index}>
+                      <b>File Name:</b> {result.file} <br />
+                      <b>Uploaded By:</b> {result.postUser}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Typography>No results found for "{searchText}"</Typography>
+              )}
+            </Box>
+          </Fade>
+        </Modal>
       </div>
       
       <div className="recents">

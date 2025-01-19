@@ -9,7 +9,8 @@ import {CookiesProvider} from 'react-cookie'
 import Login from './Components/Login.js'
 import Register from './Components/Register.js'
 
-import Main from './Components/Main.js'
+import FileUp from './Components/FileUp.js';
+import Recent from './Components/Recent.js';
 
 function Router(){
   return (
@@ -17,7 +18,8 @@ function Router(){
       <BrowserRouter>
         <Route exact path="/" component={Login}/>
         <Route exact path="/register/" component={Register}/>
-        <Route exact path="/main/" component={Main}/>
+        <Route exact path="/main/" component={FileUp}/>
+        <Route exact path="/recent/" component={Recent} />
       </BrowserRouter>
     </CookiesProvider>
   )
