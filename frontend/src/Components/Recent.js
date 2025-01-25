@@ -29,7 +29,7 @@ import Stack from '@mui/material/Stack';
 
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
-  const [loading, setLoading] = useState(true); // State to manage loading
+  //const [loading, setLoading] = useState(true); // State to manage loading
   const [token] = useCookies(["access_token"]); // Authentication token
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false); 
@@ -97,19 +97,17 @@ export default function Recent() {
       } catch (error) {
         console.error("Error fetching files:", error);
         // Optionally, you could set an error state to display an error message
-      } finally {
-        setLoading(false); // Ensure that loading state is always updated
-      }
+      } 
     };
   
     fetchFiles();
   }, [token]);
   
 
-  if (loading) {
-    console.log("loading is:",loading)
-    return <CircularProgress />;
-  }
+  // if (loading) {
+  //   console.log("loading is:",loading)
+  //   return <CircularProgress />;
+  // }
 
 
   return (

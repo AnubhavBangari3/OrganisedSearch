@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 from django.template.defaultfilters import slugify
 from datetime import datetime
+from django.contrib.postgres.fields import ArrayField
 
 import uuid
 
@@ -47,3 +48,13 @@ class UploadFile(models.Model):
 
     def __str__(self):
         return f"{self.file} by {self.postUser}"
+    
+class Paragraph(models.Model):
+    file = models.ForeignKey(
+        UploadFile, on_delete=models.CASCADE, related_name="paragraphs"
+    )
+    text = models.TextField()  # Stores the paragraph or sentence
+    embedding = ArrayField(models.FloatField(), blank=True, null=True)  # Stores embeddings as a list of floats
+
+    def __str__(self):
+        return f"Paragraph from {self.file}"
