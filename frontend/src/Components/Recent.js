@@ -24,11 +24,16 @@ import Fade from '@mui/material/Fade';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
+import Stack from '@mui/material/Stack';
+
+
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
   const [loading, setLoading] = useState(true); // State to manage loading
   const [token] = useCookies(["access_token"]); // Authentication token
   const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false); 
+
 
   const [searchText,setsearchText]=useState("")
 
@@ -47,7 +52,9 @@ export default function Recent() {
   };
 
   const [open, setOpen] = React.useState(false);
-  const handleOpen = () => {
+  const handleOpen = async () => {
+    setSearchLoading(true); 
+    //console.log("searchLoading 1:",searchLoading)
     fetch(`http://127.0.0.1:8000/search/?q=${searchText}`, {
       method: 'GET',
       headers: {
@@ -58,11 +65,15 @@ export default function Recent() {
       .then((data) => {
         setSearchResults(data); // Set search results
         setOpen(true); // Open modal
+        setSearchLoading(false); 
+        
+      
       })
-      .catch((error) => console.error('Error fetching search results:', error));
+      .catch((error) => console.error("Error fetching search results:", error))
+      .finally(() => setSearchLoading(false)); 
   };
   const handleClose = () => setOpen(false);
-
+  console.log("searchResults after:",searchResults);
 
   //for modal end
 
@@ -76,24 +87,27 @@ export default function Recent() {
             Authorization: `Bearer ${token["access_token"]}`,
           },
         });
-
+  
         if (!response.ok) {
           throw new Error("Failed to fetch files");
         }
-
+  
         const data = await response.json();
         setFiles(data); // Store fetched files in the state
-        setLoading(false); // Disable loading spinner
       } catch (error) {
         console.error("Error fetching files:", error);
-        setLoading(false); // Disable loading spinner on error
+        // Optionally, you could set an error state to display an error message
+      } finally {
+        setLoading(false); // Ensure that loading state is always updated
       }
     };
-
+  
     fetchFiles();
   }, [token]);
+  
 
   if (loading) {
+    console.log("loading is:",loading)
     return <CircularProgress />;
   }
 
@@ -147,7 +161,9 @@ export default function Recent() {
               <Typography id="transition-modal-description" sx={{ mt: 2 }}>
                 <b>Search Text: {searchText}</b>
               </Typography>
-              {searchResults.data && searchResults.data.length > 0 ? (
+              {searchLoading ? (
+                <CircularProgress /> // Show loading spinner inside modal
+              ) : searchResults.data && searchResults.data.length > 0 ? (
                 <ul>
                   {searchResults.data.map((result, index) => (
                     <li key={index}>
@@ -168,6 +184,19 @@ export default function Recent() {
           </Fade>
         </Modal>
       </div>
+      { searchLoading === true && (
+      <div
+        style={{
+          position: 'fixed', // Fixed position on screen
+          top: '50%', // Center vertically
+          left: '50%', // Center horizontally
+          transform: 'translate(-50%, -50%)', // Offset by half its size to truly center it
+          zIndex: 9999, // Make sure it appears on top of other content
+        }}
+      >
+        <CircularProgress color="success" />
+    </div>
+      )}
       
       <div className="recents">
          

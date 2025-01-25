@@ -90,7 +90,8 @@ class SearchFiles(APIView):
         print("search_text:", search_text)
         profile = Profile.objects.get(username_id=request.user.id)
         # Convert the search text into a spaCy Doc
-        search_doc = self.nlp(search_text.lower())
+        #search_doc = self.nlp(search_text.lower())
+        #print("search_doc:",search_doc)
         # Get all files associated with the profile
         files = UploadFile.objects.filter(postUser=profile)
         matching_results = []  # Store file and matching sentences
