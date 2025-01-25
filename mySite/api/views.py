@@ -15,8 +15,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 import requests
-
-from rest_framework.permissions import IsAuthenticated
+from PyPDF2 import PdfReader
+from pathlib import Path
+from docx import Document  # For handling .docx files
+import csv  # For handling .csv files
+import openpyxl  # For handling .xlsx files
+from django.http import JsonResponse
 
 # Create your views here.
 
@@ -26,6 +30,7 @@ class PostFile(APIView):
 
      def post(self,request):
             profile=Profile.objects.get(username_id=request.user.id)
+            
             ##print("post profile:",profile)
             serializer=UploadFileSerializer(data=request.data)
             ##print("serializer:",serializer)
@@ -47,7 +52,97 @@ class GetAllFile(APIView):
           serializer=UploadFileSerializer(files,many=True)
           print("serializer get:",serializer)
           return Response(serializer.data)
-     
+import fitz
+from fuzzywuzzy import fuzz
+
+import spacy
+class SearchFiles(APIView):
+    permission_classes = [IsAuthenticated]
+    nlp = spacy.load("en_core_web_md")
+
+    def extract_text_from_txt(self, file_path):
+        """Extract text from a plain text file (.txt)"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+
+    def extract_text_from_docx(self, file_path):
+        """Extract text from a Word document (.docx)"""
+        doc = Document(file_path)
+        return '\n'.join([para.text for para in doc.paragraphs])
+
+    def extract_text_from_csv(self, file_path):
+        """Extract text from a CSV file"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            return '\n'.join([' '.join(row) for row in reader])
+
+    def extract_text_from_xlsx(self, file_path):
+        """Extract text from an Excel file"""
+        wb = openpyxl.load_workbook(file_path)
+        sheet = wb.active
+        text = ""
+        for row in sheet.iter_rows(values_only=True):
+            text += ' '.join([str(cell) for cell in row]) + '\n'
+        return text
+
+    def get(self, request):
+        search_text = request.query_params.get('q', '')  
+        print("search_text:", search_text)
+        profile = Profile.objects.get(username_id=request.user.id)
+        # Convert the search text into a spaCy Doc
+        search_doc = self.nlp(search_text.lower())
+        # Get all files associated with the profile
+        files = UploadFile.objects.filter(postUser=profile)
+        matching_results = []  # Store file and matching sentences
+        
+        for file_instance in files:
+            file_path = Path(file_instance.file.path)  
+            print("file_path:", file_path)
+            try:
+                file_text = ""
+                # Check file extension and extract text accordingly
+                if file_path.suffix.lower() == '.pdf':
+                    reader = PdfReader(str(file_path))
+                    for page in reader.pages:
+                        file_text += page.extract_text()
+                elif file_path.suffix.lower() == '.txt':
+                    file_text = self.extract_text_from_txt(file_path)
+                elif file_path.suffix.lower() == '.docx':
+                    file_text = self.extract_text_from_docx(file_path)
+                elif file_path.suffix.lower() == '.csv':
+                    file_text = self.extract_text_from_csv(file_path)
+                elif file_path.suffix.lower() == '.xlsx':
+                    file_text = self.extract_text_from_xlsx(file_path)
+                else:
+                    print(f"Skipping unsupported file type: {file_path.suffix}")
+                    continue
+
+                # Process the extracted text with spaCy and search for sentences
+                file_doc = self.nlp(file_text)
+                matching_sentences = [
+                    sent.text.strip()
+                    for sent in file_doc.sents  # Tokenize text into sentences
+                    if search_text.lower() in sent.text.lower()
+                ]
+                print("matching_sentences:",matching_sentences)
+                if matching_sentences:
+                    matching_results.append({
+                        "file_name": file_instance.file.name,
+                        "matching_sentences": matching_sentences
+                    })
+                print("matching_results:",matching_results)
+              
+            except Exception as e:
+                print(f"Error reading file {file_path}: {e}")
+
+        # Return matching sentences
+        return Response({
+            "status": "success",
+            "message": "Search completed successfully.",
+            "data": matching_results
+        })
+
+
 
 class GetSingleProfile(APIView):
       permission_classes=[IsAuthenticated]

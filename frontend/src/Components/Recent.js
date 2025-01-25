@@ -147,12 +147,17 @@ export default function Recent() {
               <Typography id="transition-modal-description" sx={{ mt: 2 }}>
                 <b>Search Text: {searchText}</b>
               </Typography>
-              {searchResults.length > 0 ? (
+              {searchResults.data && searchResults.data.length > 0 ? (
                 <ul>
-                  {searchResults.map((result, index) => (
+                  {searchResults.data.map((result, index) => (
                     <li key={index}>
-                      <b>File Name:</b> {result.file} <br />
-                      <b>Uploaded By:</b> {result.postUser}
+                      <b>File Name:</b> {result.file_name} <br />
+                      <b>Matching Sentences:</b>
+                      <ul>
+                        {result.matching_sentences.map((sentence, i) => (
+                          <li key={i}>{sentence}</li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
