@@ -15,4 +15,5 @@ urlpatterns=[
     path("uploadfile/",PostFile.as_view(),name="uploadfile"),
     path("getfiles/",GetAllFile.as_view(),name="getfiles"),
     path("search/",SearchFiles.as_view(),name="search"),
+    #path("searchPara/", SearchParagraphsView.as_view(), name="search-paragraphs"),
     ]

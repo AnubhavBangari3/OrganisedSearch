@@ -34,7 +34,7 @@ class PostFile(APIView):
     permission_classes=[IsAuthenticated]
     serializer_class=UploadFileSerializer
 
-    
+    '''
     def extract_paragraphs_from_pdf(self,file_path):
         with open(file_path, "rb") as file:
             reader = PyPDF2.PdfReader(file)
@@ -105,7 +105,7 @@ class PostFile(APIView):
                 text=paragraph,
                 embedding=embedding_list # Convert NumPy array to list
             )
-
+    '''
     def post(self,request):
         profile=Profile.objects.get(username_id=request.user.id)
         
@@ -115,7 +115,7 @@ class PostFile(APIView):
         if serializer.is_valid(raise_exception=True):
                 ##print("serializer 1:",serializer)
                 upload_file=serializer.save(postUser=profile)
-                self.process_file(upload_file)
+                ##self.process_file(upload_file)
                 return Response(serializer.data,status=status.HTTP_200_OK)
         else:
                 ##print("serializer 2:",serializer)
@@ -135,8 +135,50 @@ class GetAllFile(APIView):
 
 '''
 Now I need to search from Paragraph
-'''
 
+class SearchParagraphsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Get the query parameter
+        query = request.query_params.get("q", "").strip()
+        if not query:
+            return Response({"error": "No search query provided."}, status=400)
+
+        # Load the SentenceTransformer model
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        query_embedding = model.encode(query)  # Generate query embedding
+
+        # Retrieve all paragraphs from the database
+        paragraphs = Paragraph.objects.all()
+        
+        results = []
+
+        for paragraph in paragraphs:
+            print("paragraph:",paragraph.text)
+            # Convert paragraph embedding to a NumPy array and flatten it
+            embedding = np.array(paragraph.embedding).flatten()
+            if embedding.shape != query_embedding.shape:
+                continue  # Skip if the shapes don't match
+
+            # Compute cosine similarity
+            similarity = np.dot(query_embedding, embedding) / (
+                np.linalg.norm(query_embedding) * np.linalg.norm(embedding)
+            )
+            if similarity > 0.8:  # Threshold for similarity
+                results.append({
+                    "file_name": paragraph.file.file.name.split("/")[-1],
+                    "paragraph": paragraph.text,
+                    "similarity": similarity,
+                })
+
+        # Sort results by similarity in descending order
+        results = sorted(results, key=lambda x: x["similarity"], reverse=True)
+        print("results:-",results)
+        # Return the search results
+        return Response({"data": results}, status=200)
+'''
+import re
 class SearchFiles(APIView):
     permission_classes = [IsAuthenticated]
     nlp = spacy.load("en_core_web_md")
@@ -176,40 +218,26 @@ class SearchFiles(APIView):
             text += ' '.join([str(cell) for cell in row]) + '\n'
         return text
     
-    '''
-    def process_file(self,file_instance):
-        file_path = Path(file_instance.file.path) 
-        if file_path.suffix.lower() == '.pdf':
-            paragraphs = self.extract_paragraphs_from_pdf(file_path)
-        elif file_path.suffix.lower() == '.txt':
-            paragraphs = self.extract_text_from_txt(file_path)
-        elif file_path.suffix.lower() == '.docx':
-            paragraphs = self.extract_text_from_docx(file_path)
-        elif file_path.suffix.lower() == '.csv':
-            paragraphs = self.extract_text_from_csv(file_path)
-        elif file_path.suffix.lower() == '.xlsx':
-            paragraphs = self.extract_text_from_xlsx(file_path)
-        else:
-            print(f"Skipping unsupported file type: {file_path.suffix}")
+    def clean_text(self, text):
+        """Normalize the text by removing unwanted characters and extra spaces."""
+        # Remove bullet points and special characters (like `•`)
+        cleaned_text = re.sub(r"[•\n\r\t]+", " ", text)  # Replace bullet points, newlines, tabs with space
+        cleaned_text = re.sub(r"\s{2,}", " ", cleaned_text)  # Replace multiple spaces with single space
+        return cleaned_text.strip()
+    
 
-
-        # Load Hugging Face model
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Generate embeddings for paragraphs
-        embeddings = model.encode(paragraphs)
-
-        # Store paragraphs and embeddings in the database
-        for paragraph, embedding in zip(paragraphs, embeddings):
-            Paragraph.objects.create(
-                file=file_instance,
-                text=paragraph,
-                embedding=embedding.tolist()  # Convert NumPy array to list
-            )
-    '''
     def get(self, request):
         search_text = request.query_params.get('q', '')  
         print("search_text:", search_text)
+        print("search_text list:",type(search_text))
+        search_text = self.clean_text(search_text)
+        print("search_text after:",search_text)
+        '''
+        if "•" in search_text:
+             bullet_index = search_text.find("•")
+             search_text=search_text[:bullet_index].strip()
+        '''
+
         profile = Profile.objects.get(username_id=request.user.id)
         # Convert the search text into a spaCy Doc
         #search_doc = self.nlp(search_text.lower())
@@ -230,7 +258,8 @@ class SearchFiles(APIView):
                     for page in reader.pages:
                         file_text += page.extract_text()
                     '''
-                    file_text=self.extract_paragraphs_from_pdf(file_path)
+                    paragraphs = self.extract_paragraphs_from_pdf(file_path)
+                    file_text = "\n".join(paragraphs)
                 elif file_path.suffix.lower() == '.txt':
                     file_text = self.extract_text_from_txt(file_path)
                 elif file_path.suffix.lower() == '.docx':
@@ -242,14 +271,21 @@ class SearchFiles(APIView):
                 else:
                     print(f"Skipping unsupported file type: {file_path.suffix}")
                     continue
-
+                cleaned_file_text = self.clean_text(file_text)
                 # Process the extracted text with spaCy and search for sentences
-                file_doc = self.nlp(file_text)
+                file_doc = self.nlp(cleaned_file_text)
+                #print("file_doc:",file_doc)
+                a=re.search(re.escape(search_text.lower()), file_doc.text.lower())
+                print("a:",a)
                 matching_sentences = [
                     sent.text.strip()
                     for sent in file_doc.sents  # Tokenize text into sentences
                     if search_text.lower() in sent.text.lower()
                 ]
+
+                if len(matching_sentences) == 0 and a:
+                    matched_text = a.group()  # Extract the matched text
+                    matching_sentences.append(matched_text.strip())
                 print("matching_sentences:",matching_sentences)
                 if matching_sentences:
                     matching_results.append({
