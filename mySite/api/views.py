@@ -282,7 +282,7 @@ class SearchFiles(APIView):
                     for sent in file_doc.sents  # Tokenize text into sentences
                     if search_text.lower() in sent.text.lower()
                 ]
-
+                ##Need to improve it and add ctrl+f in react code
                 if len(matching_sentences) == 0 and a:
                     matched_text = a.group()  # Extract the matched text
                     matching_sentences.append(matched_text.strip())

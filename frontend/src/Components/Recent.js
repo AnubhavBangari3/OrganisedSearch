@@ -49,6 +49,7 @@ export default function Recent() {
     border: '2px solid #000',
     boxShadow: 24,
     p: 4,
+    overflow:'auto',
   };
 
   const [open, setOpen] = React.useState(false);
