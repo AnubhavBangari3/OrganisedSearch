@@ -105,10 +105,7 @@ export default function Recent() {
   }, [token]);
   
 
-  // if (loading) {
-  //   console.log("loading is:",loading)
-  //   return <CircularProgress />;
-  // }
+ console.log("File:",files)
 
 
   return (
@@ -161,12 +158,28 @@ export default function Recent() {
                 <b>Search Text: {searchText}</b>
               </Typography>
               {searchLoading ? (
-                <CircularProgress /> // Show loading spinner inside modal
-              ) : searchResults.data && searchResults.data.length > 0 ? (
-                <ul>
-                  {searchResults.data.map((result, index) => (
+              <CircularProgress /> // Show loading spinner inside modal
+            ) : searchResults.data && searchResults.data.length > 0 ? (
+              <ul>
+                {searchResults.data.map((result, index) => {
+                  // Find the corresponding file in the `files` list
+                  const matchingFile = files.find((file) => file.file.split("/").pop() === result.file_name.split("/").pop());
+                  
+                  return (
                     <li key={index}>
-                      <b>File Name:</b> {result.file_name} <br />
+                      <b>File Name:</b>{" "}
+                      {matchingFile ? (
+                        <a
+                          href={`http://127.0.0.1:8000/${matchingFile.file}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {result.file_name}
+                        </a>
+                      ) : (
+                        result.file_name
+                      )}
+                      <br />
                       <b>Matching Sentences:</b>
                       <ul>
                         {result.matching_sentences.map((sentence, i) => (
@@ -174,11 +187,12 @@ export default function Recent() {
                         ))}
                       </ul>
                     </li>
-                  ))}
-                </ul>
-              ) : (
-                <Typography>No results found for "{searchText}"</Typography>
-              )}
+                  );
+                })}
+              </ul>
+            ) : (
+              <Typography>No results found for "{searchText}"</Typography>
+            )}
             </Box>
           </Fade>
         </Modal>
