@@ -26,6 +26,13 @@ import Typography from '@mui/material/Typography';
 
 import Stack from '@mui/material/Stack';
 
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faHeart as faRegularHeart } from "@fortawesome/free-regular-svg-icons"; 
+import { faHeart as faSolidHeart } from "@fortawesome/free-solid-svg-icons"; 
+import { faTrashCan as faRegularCan } from "@fortawesome/free-regular-svg-icons"; 
+import { faTrashCan as faSolidCan } from "@fortawesome/free-solid-svg-icons"; 
+import { faEye as faRegularEye } from "@fortawesome/free-regular-svg-icons"; 
+import { faEye as faSolidEye } from "@fortawesome/free-solid-svg-icons"; 
 
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
@@ -33,6 +40,36 @@ export default function Recent() {
   const [token] = useCookies(["access_token"]); // Authentication token
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false); 
+  const [isHovered, setIsHovered] = useState(false);
+  const [isHoveredH, setIsHoveredH] = useState(false);
+  const [isHoveredE, setIsHoveredE] = useState(false);
+
+  
+  const handleMouseEnter = (id, type) => {
+    setIsHovered((prev) => ({ ...prev, [`${id}-${type}`]: true }));
+  };
+
+  const handleMouseLeave = (id, type) => {
+    setIsHovered((prev) => ({ ...prev, [`${id}-${type}`]: false }));
+  };
+
+
+  
+  const handleMouseEnterH = (id, type) => {
+    setIsHoveredH((prev) => ({ ...prev, [`${id}-${type}`]: true }));
+  };
+
+  const handleMouseLeaveH = (id, type) => {
+    setIsHoveredH((prev) => ({ ...prev, [`${id}-${type}`]: false }));
+  };
+
+  const handleMouseEnterE = (id, type) => {
+    setIsHoveredE((prev) => ({ ...prev, [`${id}-${type}`]: true }));
+  };
+
+  const handleMouseLeaveE = (id, type) => {
+    setIsHoveredE((prev) => ({ ...prev, [`${id}-${type}`]: false }));
+  };
 
 
   const [searchText,setsearchText]=useState("")
@@ -104,8 +141,6 @@ export default function Recent() {
     fetchFiles();
   }, [token]);
   
-
- console.log("File:",files)
 
 
   return (
@@ -179,6 +214,16 @@ export default function Recent() {
                       ) : (
                         result.file_name
                       )}
+                       <ListItemIcon>
+                        <FontAwesomeIcon
+                        icon={isHoveredE[`${index}-Eye`] ? faSolidEye : faRegularEye}
+                        size="1x"
+                        color="black"
+                        style={{ paddingLeft: "10px", transition: "color 0.3s ease-in-out" }}
+                        onMouseEnter={() => handleMouseEnterE(index, "Eye")}
+                        onMouseLeave={() => handleMouseLeaveE(index, "Eye")}
+                        />
+                      </ListItemIcon>
                       <br />
                       <b>Matching Sentences:</b>
                       <ul>
@@ -212,7 +257,7 @@ export default function Recent() {
       )}
       
       <div className="recents">
-         
+    
           {files.length === 0 ? (
         <p>No files available.</p>
       ) : (
@@ -221,14 +266,34 @@ export default function Recent() {
             <ListItem
               key={file.id}
               component="a"
-              href={`http://127.0.0.1:8000/${file.file}`}
-              target="_blank"
-              rel="noopener noreferrer"
             >
-              <ListItemIcon>
-                <CloudDownloadIcon />
+ 
+               <ListItemIcon>
+                <FontAwesomeIcon
+                icon={isHoveredH[`${file.id}-trash`] ? faSolidEye : faRegularCan}
+                size="2x"
+                color="black"
+                style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
+                onMouseEnter={() => handleMouseEnterH(file.id, "trash")}
+                onMouseLeave={() => handleMouseLeaveH(file.id, "trash")}
+                />
               </ListItemIcon>
-              <ListItemText primary={file.file.split("/").pop()} />
+
+              <a style={{'color':'black'}}  href={`http://127.0.0.1:8000/${file.file}`}
+              target="_blank" rel="noopener noreferrer"> <ListItemText primary={file.file.split("/").pop()} /></a>
+
+              <ListItemIcon>
+                <FontAwesomeIcon
+                icon={isHovered[`${file.id}-heart`] ? faSolidHeart : faRegularHeart}
+                size="2x"
+                color="red"
+                style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
+                onMouseEnter={() => handleMouseEnter(file.id, "heart")}
+                onMouseLeave={() => handleMouseLeave(file.id, "heart")}
+                />
+              </ListItemIcon>
+              
+              
             </ListItem>
           ))}
         </List>
