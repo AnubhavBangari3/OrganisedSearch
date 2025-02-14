@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import RegisterView,LoginUser,LogoutView,GetSingleProfile,PostFile,GetAllFile,SearchFiles
+from .views import RegisterView,LoginUser,LogoutView,GetSingleProfile,PostFile,GetAllFile,SearchFiles,GetOneFile
 
 from rest_framework.routers import DefaultRouter
 
@@ -15,5 +15,6 @@ urlpatterns=[
     path("uploadfile/",PostFile.as_view(),name="uploadfile"),
     path("getfiles/",GetAllFile.as_view(),name="getfiles"),
     path("search/",SearchFiles.as_view(),name="search"),
+    path("file/<int:id>/",GetOneFile.as_view(),name="file"),
     #path("searchPara/", SearchParagraphsView.as_view(), name="search-paragraphs"),
     ]

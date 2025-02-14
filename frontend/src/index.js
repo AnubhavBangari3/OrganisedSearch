@@ -11,6 +11,7 @@ import Register from './Components/Register.js'
 
 import FileUp from './Components/FileUp.js';
 import Recent from './Components/Recent.js';
+import FilePage from './Components/FilePage.js';
 
 function Router(){
   return (
@@ -20,6 +21,7 @@ function Router(){
         <Route exact path="/register/" component={Register}/>
         <Route exact path="/main/" component={FileUp}/>
         <Route exact path="/recent/" component={Recent} />
+        <Route exact path="/file/:id" component={FilePage} />
       </BrowserRouter>
     </CookiesProvider>
   )

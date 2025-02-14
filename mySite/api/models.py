@@ -47,5 +47,5 @@ class UploadFile(models.Model):
     file=models.FileField(upload_to="ProfileFiles/")
 
     def __str__(self):
-        return f"{self.file} by {self.postUser}"
+        return f"{self.file} by {self.postUser} {self.id}"
     

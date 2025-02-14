@@ -27,6 +27,7 @@ from fuzzywuzzy import fuzz
 import numpy as np
 import spacy
 from sentence_transformers import SentenceTransformer
+from django.shortcuts import get_object_or_404 
 
 # Create your views here.
 
@@ -129,8 +130,31 @@ class GetAllFile(APIView):
           profile=Profile.objects.get(username_id=request.user.id)
           files=UploadFile.objects.filter(postUser=profile)
           serializer=UploadFileSerializer(files,many=True)
-          print("serializer get:",serializer)
+          #print("serializer get:",serializer)
           return Response(serializer.data)
+   
+class GetOneFile(APIView):
+     permission_classes=[IsAuthenticated]
+     serializer_class=UploadFileSerializer
+
+     def get(self, request, id):
+        try:
+            # Get the authenticated user's profile
+            profile = Profile.objects.get(username_id=request.user.id)
+
+            # Fetch a single file instead of a QuerySet
+            file = get_object_or_404(UploadFile, postUser=profile, id=id) 
+
+            # Serialize the single file object (many=False is not needed)
+            serializer = UploadFileSerializer(file)  
+
+            return Response(serializer.data, status=200)
+
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=404)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 
 

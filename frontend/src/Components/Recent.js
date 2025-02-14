@@ -140,6 +140,8 @@ export default function Recent() {
   
     fetchFiles();
   }, [token]);
+
+
   
 
 
@@ -205,11 +207,13 @@ export default function Recent() {
                       <b>File Name:</b>{" "}
                       {matchingFile ? (
                         <a
-                          href={`http://127.0.0.1:8000/${matchingFile.file}`}
+                         // href={`http://127.0.0.1:8000/file/${matchingFile.file}`}
+                         href={`/file/${matchingFile.id}`} 
+                         onClick={() => localStorage.setItem("searchQuery", searchText)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {result.file_name}
+                          {result.file_name} || {matchingFile.id}
                         </a>
                       ) : (
                         result.file_name
