@@ -21,7 +21,7 @@ from docx import Document  # For handling .docx files
 import csv  # For handling .csv files
 import openpyxl  # For handling .xlsx files
 from django.http import JsonResponse
-
+import os
 import fitz
 from fuzzywuzzy import fuzz
 import numpy as np
@@ -132,7 +132,32 @@ class GetAllFile(APIView):
           serializer=UploadFileSerializer(files,many=True)
           #print("serializer get:",serializer)
           return Response(serializer.data)
-   
+import docx     
+# 🔹 Helper function to extract text from PDF
+def extract_pdf_text(file_path):
+    text = ""
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            text += page.get_text()
+    return text if text else "No text found in PDF."
+
+# 🔹 Helper function to extract text from Word files (.docx)
+def extract_docx_text(file_path):
+    doc = docx.Document(file_path)
+    text = "\n".join([para.text for para in doc.paragraphs])
+    return text if text else "No text found in DOCX."
+
+# 🔹 Helper function to extract data from Excel files (.xlsx)
+def extract_xlsx_data(file_path):
+    workbook = openpyxl.load_workbook(file_path)
+    data = {}
+    for sheet in workbook.sheetnames:
+        sheet_data = []
+        worksheet = workbook[sheet]
+        for row in worksheet.iter_rows(values_only=True):
+            sheet_data.append(row)
+        data[sheet] = sheet_data
+    return data if data else "No data found in XLSX."   
 class GetOneFile(APIView):
      permission_classes=[IsAuthenticated]
      serializer_class=UploadFileSerializer
@@ -142,19 +167,52 @@ class GetOneFile(APIView):
             # Get the authenticated user's profile
             profile = Profile.objects.get(username_id=request.user.id)
 
-            # Fetch a single file instead of a QuerySet
-            file = get_object_or_404(UploadFile, postUser=profile, id=id) 
+            # Fetch the file object
+            file_obj = get_object_or_404(UploadFile, postUser=profile, id=id)
 
-            # Serialize the single file object (many=False is not needed)
-            serializer = UploadFileSerializer(file)  
+            # Get the file path
+            file_path = file_obj.file.path  # Full file system path
+            file_extension = os.path.splitext(file_path)[1].lower()
 
-            return Response(serializer.data, status=200)
+            # Check if the file exists
+            if not os.path.exists(file_path):
+                return Response({"error": "File not found"}, status=404)
+
+            file_content = None
+
+            # 🔹 Handle different file types
+            if file_extension in [".txt", ".csv", ".json", ".log"]:
+                # Read plain text files
+                with open(file_path, "r", encoding="utf-8") as f:
+                    file_content = f.read()
+
+            elif file_extension == ".pdf":
+                # Extract text from PDF
+                file_content =extract_pdf_text(file_path)
+
+            elif file_extension in [".docx"]:
+                # Extract text from Word Document
+                file_content =extract_docx_text(file_path)
+
+            elif file_extension in [".xlsx"]:
+                # Extract data from Excel file
+                file_content =extract_xlsx_data(file_path)
+
+            # Serialize file data and return
+            return Response({
+                "id": file_obj.id,
+                "file_name": file_obj.file.name,
+                "file_url": request.build_absolute_uri(file_obj.file.url),
+                "file_content": file_content  # May contain text or JSON (for Excel)
+            }, status=200)
 
         except Profile.DoesNotExist:
             return Response({"error": "Profile not found"}, status=404)
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+    
 
 
 
