@@ -12,6 +12,8 @@ import Register from './Components/Register.js'
 import FileUp from './Components/FileUp.js';
 import Recent from './Components/Recent.js';
 import FilePage from './Components/FilePage.js';
+import Bin from './Components/Bin.js';
+import Saved from './Components/Saved.js';
 
 function Router(){
   return (
@@ -22,6 +24,8 @@ function Router(){
         <Route exact path="/main/" component={FileUp}/>
         <Route exact path="/recent/" component={Recent} />
         <Route exact path="/file/:id" component={FilePage} />
+        <Route exact path="/bin/" component={Bin} />
+        <Route exact path="/saved/" component={Saved} />
       </BrowserRouter>
     </CookiesProvider>
   )

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile,UploadFile
+from .models import Profile,UploadFile,Bin
 
 from django.contrib.auth import authenticate
 from rest_framework.validators import UniqueValidator
@@ -88,5 +88,11 @@ class UploadFileSerializer(serializers.ModelSerializer):
     postUser=serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model=UploadFile
-        fields=('id','postUser','file',)
+        fields=('id','postUser','file','saved',)
+
+class BinSerializer(serializers.ModelSerializer):
+    postUserB=serializers.PrimaryKeyRelatedField(read_only=True)
+    class Meta:
+        model=Bin
+        fields=('id','postUserB','fileB','deleted_at',)
 

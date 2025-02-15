@@ -110,9 +110,9 @@ export default function FilePage() {
     <div>
       <Main />
       <h2>File ID: {id}</h2>
-      <h6>
+      <h2>
         <b>Search Query: {searchQuery}</b>
-      </h6>
+      </h2>
       <p>
         <b>
           Press <span style={{ color: "red" }}>Enter</span> to navigate through matches!

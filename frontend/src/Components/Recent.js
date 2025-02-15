@@ -36,6 +36,7 @@ import { faEye as faSolidEye } from "@fortawesome/free-solid-svg-icons";
 
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
+  const [similarFiles, setSimilarFiles] = useState([]); 
   //const [loading, setLoading] = useState(true); // State to manage loading
   const [token] = useCookies(["access_token"]); // Authentication token
   const [searchResults, setSearchResults] = useState([]);
@@ -131,7 +132,8 @@ export default function Recent() {
         }
   
         const data = await response.json();
-        setFiles(data); // Store fetched files in the state
+        setSimilarFiles(data.similar_files);
+        setFiles(data.files); // Store fetched files in the state
       } catch (error) {
         console.error("Error fetching files:", error);
         // Optionally, you could set an error state to display an error message
@@ -142,7 +144,51 @@ export default function Recent() {
   }, [token]);
 
 
+    // Function to mark a file as saved
+    const handleSaveFile = async (fileId) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/file/save/${fileId}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token["access_token"]}`,
+          },
+        });
   
+        if (!response.ok) {
+          throw new Error("Failed to save file");
+        }
+  
+        setFiles((prevFiles) =>
+          prevFiles.map((file) =>
+            file.id === fileId ? { ...file, saved: true } : file
+          )
+        );
+      } catch (error) {
+        console.error("Error saving file:", error);
+      }
+    };
+  
+    // Function to move a file to the bin
+    const handleMoveToBin = async (fileId) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/file/bin/${fileId}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token["access_token"]}`,
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to move file to bin");
+        }
+  
+        setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
+      } catch (error) {
+        console.error("Error moving file to bin:", error);
+      }
+    };
 
 
   return (
@@ -259,13 +305,30 @@ export default function Recent() {
         <CircularProgress color="success" />
     </div>
       )}
+
+    <div className="similar-files">
+      <h3>Similar Files</h3>
+      {similarFiles.length === 0 ? (
+        <p>No similar files found.</p>
+      ) : (
+        <ul>
+          {similarFiles.map((item, index) => (
+            <li key={index}>
+              <b>{item.file1}</b> and <b>{item.file2}</b> have 
+              <b> {item.similarity_score}%</b> similarity.
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
       
       <div className="recents">
-    
+      
           {files.length === 0 ? (
         <p>No files available.</p>
       ) : (
         <List>
+         
           {files.map((file) => (
             <ListItem
               key={file.id}
@@ -278,6 +341,7 @@ export default function Recent() {
                 size="2x"
                 color="black"
                 style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
+                onClick={() => handleMoveToBin(file.id)}
                 onMouseEnter={() => handleMouseEnterH(file.id, "trash")}
                 onMouseLeave={() => handleMouseLeaveH(file.id, "trash")}
                 />
@@ -292,6 +356,7 @@ export default function Recent() {
                 size="2x"
                 color="red"
                 style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
+                onClick={() => handleSaveFile(file.id)}
                 onMouseEnter={() => handleMouseEnter(file.id, "heart")}
                 onMouseLeave={() => handleMouseLeave(file.id, "heart")}
                 />

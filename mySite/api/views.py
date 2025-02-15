@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate,login
 
 from django.contrib.auth.models import User
-from .models import Profile,UploadFile
-from .serializers import RealizerSerializer,LoginSerializer,ProfileSerializer,UploadFileSerializer
+from .models import Profile,UploadFile,Bin
+from .serializers import RealizerSerializer,LoginSerializer,ProfileSerializer,UploadFileSerializer,BinSerializer
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
@@ -28,85 +28,67 @@ import numpy as np
 import spacy
 from sentence_transformers import SentenceTransformer
 from django.shortcuts import get_object_or_404 
+import docx  
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Create your views here.
+
+class MoveToBinAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, file_id):
+        try:
+            profile=Profile.objects.get(username_id=request.user.id)
+            file = UploadFile.objects.get(id=file_id, postUser=profile)
+            
+            # Move the file to the bin
+            Bin.objects.create(postUserB=profile,fileB=file.file)
+            
+            # Delete the file from UploadFile
+            file.delete()
+
+            return Response({"message": "File moved to bin."}, status=status.HTTP_200_OK)
+
+        except UploadFile.DoesNotExist:
+            return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+class GetBinFilesAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = Profile.objects.get(username_id=request.user.id)
+        bin_files = Bin.objects.filter(postUserB=profile)
+        serializer = BinSerializer(bin_files, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+class SaveFileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, file_id):
+        profile=Profile.objects.get(username_id=request.user.id)
+        try:
+            file = UploadFile.objects.get(id=file_id, postUser=profile)
+            file.saved = True  # Mark the file as saved
+            file.save()
+
+            return Response({"message": "File marked as saved."}, status=status.HTTP_200_OK)
+
+        except UploadFile.DoesNotExist:
+            return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+class SavedFilesAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = Profile.objects.get(username_id=request.user.id)  # Get the user's profile
+        saved_files = UploadFile.objects.filter(postUser=profile, saved=True)  # Fetch saved files
+        serializer = UploadFileSerializer(saved_files, many=True)  # Serialize the data
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class PostFile(APIView):
     permission_classes=[IsAuthenticated]
     serializer_class=UploadFileSerializer
 
-    '''
-    def extract_paragraphs_from_pdf(self,file_path):
-        with open(file_path, "rb") as file:
-            reader = PyPDF2.PdfReader(file)
-            paragraphs = []
-            for page in reader.pages:
-                text = page.extract_text()
-                # Split text into paragraphs
-                paragraphs.extend(text.split("\n\n"))  # Split by double line breaks
-            return [para.strip() for para in paragraphs if para.strip()]
-
-    def extract_text_from_txt(self, file_path):
-        """Extract text from a plain text file (.txt)"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read()
-
-    def extract_text_from_docx(self, file_path):
-        """Extract text from a Word document (.docx)"""
-        doc = Document(file_path)
-        return '\n'.join([para.text for para in doc.paragraphs])
-
-    def extract_text_from_csv(self, file_path):
-        """Extract text from a CSV file"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            return '\n'.join([' '.join(row) for row in reader])
-
-    def extract_text_from_xlsx(self, file_path):
-        """Extract text from an Excel file"""
-        wb = openpyxl.load_workbook(file_path)
-        sheet = wb.active
-        text = ""
-        for row in sheet.iter_rows(values_only=True):
-            text += ' '.join([str(cell) for cell in row]) + '\n'
-        return text
-    
-    # Function to process file and store paragraphs with embeddings
-    def process_file(self,file_instance):
-        file_path = Path(file_instance.file.path) 
-        if file_path.suffix.lower() == '.pdf':
-            paragraphs = self.extract_paragraphs_from_pdf(file_path)
-        elif file_path.suffix.lower() == '.txt':
-            paragraphs = self.extract_text_from_txt(file_path)
-        elif file_path.suffix.lower() == '.docx':
-            paragraphs = self.extract_text_from_docx(file_path)
-        elif file_path.suffix.lower() == '.csv':
-            paragraphs = self.extract_text_from_csv(file_path)
-        elif file_path.suffix.lower() == '.xlsx':
-            paragraphs = self.extract_text_from_xlsx(file_path)
-        else:
-            print(f"Skipping unsupported file type: {file_path.suffix}")
-
-
-        # Load Hugging Face model
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Generate embeddings for paragraphs
-        embeddings = model.encode(paragraphs)
-
-        # Store paragraphs and embeddings in the database
-        for paragraph, embedding in zip(paragraphs, embeddings):
-            if isinstance(embedding, np.ndarray):
-                embedding_list = embedding.tolist()  # Convert NumPy array to list of floats
-            else:
-                # If it's already a list of floats, no need to convert
-                embedding_list = [float(embedding)]  
-            Paragraph.objects.create(
-                file=file_instance,
-                text=paragraph,
-                embedding=embedding_list # Convert NumPy array to list
-            )
-    '''
     def post(self,request):
         profile=Profile.objects.get(username_id=request.user.id)
         
@@ -122,17 +104,131 @@ class PostFile(APIView):
                 ##print("serializer 2:",serializer)
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
             
-class GetAllFile(APIView):
-     permission_classes=[IsAuthenticated]
-     serializer_class=UploadFileSerializer
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-     def get(self,request):
-          profile=Profile.objects.get(username_id=request.user.id)
-          files=UploadFile.objects.filter(postUser=profile)
-          serializer=UploadFileSerializer(files,many=True)
-          #print("serializer get:",serializer)
-          return Response(serializer.data)
-import docx     
+
+class GetAllFile(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UploadFileSerializer
+
+    def get(self, request):
+        # Get user profile
+        try:
+            profile = Profile.objects.get(username_id=request.user.id)
+        except Profile.DoesNotExist:
+            return Response({"error": "User profile not found"}, status=404)
+
+        # Get all user-uploaded files
+        files = UploadFile.objects.filter(postUser=profile)
+        serializer = UploadFileSerializer(files, many=True)
+        
+        # Extract file paths from the database
+        file_paths = [file.file.path for file in files]  # Assuming `file` field stores FileField
+        file_texts, file_names = self.load_files(file_paths)
+
+        # Compute similarity
+        similar_files = self.compute_all_similarities(file_texts, file_names)
+
+        print("similar_files:",similar_files)
+        return Response({
+            "files": serializer.data,
+            "similar_files": similar_files
+        })
+
+    def load_files(self, file_paths):
+        """ Extract text from different file formats. """
+        file_texts = []
+        file_names = []
+
+        for file_path in file_paths:
+            if not os.path.exists(file_path):
+                print(f"Warning: Skipping missing file - {file_path}")
+                continue
+
+            text = self.extract_text(file_path)
+            if text:
+                file_texts.append(text)
+                file_names.append(os.path.basename(file_path))
+
+        return file_texts, file_names
+
+    def extract_text(self, file_path):
+        """ Extract text from supported file types. """
+        try:
+            if file_path.endswith(".pdf"):
+                return self.extract_text_from_pdf(file_path)
+            elif file_path.endswith(".txt"):
+                return self.extract_text_from_txt(file_path)
+            elif file_path.endswith(".docx"):
+                return self.extract_text_from_docx(file_path)
+            elif file_path.endswith(".csv"):
+                return self.extract_text_from_csv(file_path)
+            elif file_path.endswith(".xlsx"):
+                return self.extract_text_from_xlsx(file_path)
+            else:
+                print(f"Skipping unsupported file type: {file_path}")
+                return ""
+        except Exception as e:
+            print(f"Error processing file {file_path}: {e}")
+            return ""
+
+    def extract_text_from_pdf(self, file_path):
+        """ Extract text from PDFs. """
+        text = ""
+        with open(file_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        return text.strip()
+
+    def extract_text_from_txt(self, file_path):
+        """ Extract text from TXT files. """
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read().strip()
+
+    def extract_text_from_docx(self, file_path):
+        """ Extract text from DOCX files. """
+        doc = Document(file_path)
+        return '\n'.join([para.text for para in doc.paragraphs]).strip()
+
+    def extract_text_from_csv(self, file_path):
+        """ Extract text from CSV files. """
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            return '\n'.join([' '.join(row) for row in reader]).strip()
+
+    def extract_text_from_xlsx(self, file_path):
+        """ Extract text from XLSX files. """
+        wb = openpyxl.load_workbook(file_path)
+        sheet = wb.active
+        text = ""
+        for row in sheet.iter_rows(values_only=True):
+            text += ' '.join([str(cell) for cell in row if cell is not None]) + '\n'
+        return text.strip()
+
+    def compute_all_similarities(self, file_texts, file_names, threshold=0.8):
+        """ Compute pairwise similarities between all files. """
+        if not file_texts:
+            return []
+
+        file_embeddings = model.encode(file_texts)  # Get embeddings
+        similarity_matrix = cosine_similarity(file_embeddings)
+
+        similar_files = []
+        for i in range(len(file_names)):
+            for j in range(i + 1, len(file_names)):  # Avoid redundant comparisons
+                similarity_score = similarity_matrix[i][j]
+                if similarity_score >= threshold:
+                    similar_files.append({
+                        "file1": file_names[i],
+                        "file2": file_names[j],
+                        "similarity_score": round(similarity_score * 100, 2)
+                    })
+
+        return similar_files
+   
 # 🔹 Helper function to extract text from PDF
 def extract_pdf_text(file_path):
     text = ""
@@ -157,7 +253,8 @@ def extract_xlsx_data(file_path):
         for row in worksheet.iter_rows(values_only=True):
             sheet_data.append(row)
         data[sheet] = sheet_data
-    return data if data else "No data found in XLSX."   
+    return data if data else "No data found in XLSX." 
+  
 class GetOneFile(APIView):
      permission_classes=[IsAuthenticated]
      serializer_class=UploadFileSerializer

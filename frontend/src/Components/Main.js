@@ -96,8 +96,16 @@ const logginOut = () =>{
             history.push('/recent/')
           window.location.reload();
           }} />
-            <BottomNavigationAction label="Favorites" icon={<FavoriteIcon />} />
-            <BottomNavigationAction label="Archive" icon={<ArchiveIcon />} />
+            <BottomNavigationAction label="Favorites" icon={<FavoriteIcon />} onClick={() =>{
+            
+            history.push('/saved/')
+          window.location.reload();
+          }} />
+            <BottomNavigationAction label="Bin" icon={<ArchiveIcon />} onClick={() =>{
+            
+            history.push('/bin/')
+          window.location.reload();
+          }}/>
             <BottomNavigationAction label="Logout" icon={<LogoutIcon />} onClick={() =>{
             logginOut();
             history.push('/')

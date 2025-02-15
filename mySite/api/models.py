@@ -45,7 +45,19 @@ class Profile(models.Model):
 class UploadFile(models.Model):
     postUser=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="profile_posts")
     file=models.FileField(upload_to="ProfileFiles/")
+    saved = models.BooleanField(default=False)  # New field to track saved fi
 
     def __str__(self):
         return f"{self.file} by {self.postUser} {self.id}"
+    
+class Bin(models.Model):
+    postUserB = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="deleted_files")
+    fileB = models.FileField(upload_to="ProfileFiles/Bin")
+    deleted_at = models.DateTimeField(auto_now_add=True)  # Track when the file was deleted
+
+    def __str__(self):
+        return f"Deleted: {self.fileB} by {self.postUserB}"
+    
+
+
     
