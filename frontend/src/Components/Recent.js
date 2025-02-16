@@ -36,6 +36,7 @@ import { faEye as faSolidEye } from "@fortawesome/free-solid-svg-icons";
 
 export default function Recent() {
   const [files, setFiles] = useState([]); // State to store the files
+  const [filesData, setfilesData] = useState([]); // State to store the files
   const [similarFiles, setSimilarFiles] = useState([]); 
   //const [loading, setLoading] = useState(true); // State to manage loading
   const [token] = useCookies(["access_token"]); // Authentication token
@@ -139,8 +140,32 @@ export default function Recent() {
         // Optionally, you could set an error state to display an error message
       } 
     };
+
+    const fetchFilesData = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/getAllfiles/", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token["access_token"]}`,
+          },
+        });
   
+        if (!response.ok) {
+          throw new Error("Failed to fetch files");
+        }
+  
+        const data = await response.json();
+        console.log("Fetched files:", data);
+        setfilesData(data); // Store fetched files in the state
+      } catch (error) {
+        console.error("Error fetching files:", error);
+        // Optionally, you could set an error state to display an error message
+      } 
+    };
+    fetchFilesData();
     fetchFiles();
+    
   }, [token]);
 
 
@@ -246,7 +271,7 @@ export default function Recent() {
               <ul>
                 {searchResults.data.map((result, index) => {
                   // Find the corresponding file in the `files` list
-                  const matchingFile = files.find((file) => file.file.split("/").pop() === result.file_name.split("/").pop());
+                  const matchingFile = filesData.find((file) => file.file.split("/").pop() === result.file_name.split("/").pop());
                   
                   return (
                     <li key={index}>
@@ -324,12 +349,12 @@ export default function Recent() {
       
       <div className="recents">
       
-          {files.length === 0 ? (
+          {filesData.length === 0 ? (
         <p>No files available.</p>
       ) : (
         <List>
          
-          {files.map((file) => (
+          {filesData.map((file) => (
             <ListItem
               key={file.id}
               component="a"

@@ -76,6 +76,21 @@ class SaveFileAPIView(APIView):
         except UploadFile.DoesNotExist:
             return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
         
+class NotSaveFileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, file_id):
+        profile=Profile.objects.get(username_id=request.user.id)
+        try:
+            file = UploadFile.objects.get(id=file_id, postUser=profile)
+            file.saved = False  # Mark the file as saved
+            file.save()
+
+            return Response({"message": "File marked as saved."}, status=status.HTTP_200_OK)
+
+        except UploadFile.DoesNotExist:
+            return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
+        
 class SavedFilesAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -105,6 +120,24 @@ class PostFile(APIView):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
             
 model = SentenceTransformer('all-MiniLM-L6-v2')
+
+class GetAllFileData(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UploadFileSerializer
+
+    def get(self, request):
+        # Get user profile
+        try:
+            profile = Profile.objects.get(username_id=request.user.id)
+        except Profile.DoesNotExist:
+            return Response({"error": "User profile not found"}, status=404)
+
+        # Get all user-uploaded files
+        files = UploadFile.objects.filter(postUser=profile)
+        print("All files:",files)
+        serializer = UploadFileSerializer(files, many=True)
+       
+        return Response(serializer.data)
 
 
 class GetAllFile(APIView):
