@@ -341,8 +341,51 @@ class GetOneFile(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+        
+from transformers import pipeline
+class AskQuestionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    
+    def post(self, request):
+        profile = Profile.objects.get(username_id=request.user.id)
+        question = request.data.get("question")
+        file_id = request.data.get("file_id")
+
+        if not question or not file_id:
+            return Response({"error": "Both question and file ID are required"}, status=400)
+
+        # Get the file object
+        file_obj = get_object_or_404(UploadFile, id=file_id, postUser=profile)
+        file_path = file_obj.file.path
+        file_extension = os.path.splitext(file_path)[1].lower()
+
+        # Extract text from the file
+        if file_extension == ".pdf":
+            context = extract_pdf_text(file_path)
+        elif file_extension == ".docx":
+            context = extract_docx_text(file_path)
+        elif file_extension == ".xlsx":
+            context = extract_xlsx_data(file_path)
+        elif file_extension in [".txt", ".csv", ".json", ".log"]:
+            with open(file_path, "r", encoding="utf-8") as f:
+                context = f.read()
+        else:
+            return Response({"error": "Unsupported file format"}, status=400)
+
+        if not context:
+            return Response({"error": "File content is empty"}, status=400)
+
+        # Load the AI Question-Answering Model
+        qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+
+        # Get the answer from AI
+        result = qa_pipeline(question=question, context=context,max_answer_len=100)
+        print("result:",result)
+        return Response({
+            "question": question,
+            "answer": result["answer"],
+            "score": result["score"],
+        })    
 
 
 

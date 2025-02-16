@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import RegisterView,LoginUser,LogoutView,GetSingleProfile,PostFile,GetAllFile,SearchFiles,GetOneFile, MoveToBinAPIView, SaveFileAPIView,SavedFilesAPIView,GetBinFilesAPIView,NotSaveFileAPIView,GetAllFileData
+from .views import RegisterView,LoginUser,LogoutView,GetSingleProfile,PostFile,GetAllFile,SearchFiles,GetOneFile, MoveToBinAPIView, SaveFileAPIView,SavedFilesAPIView,GetBinFilesAPIView,NotSaveFileAPIView,GetAllFileData,AskQuestionAPIView
 
 from rest_framework.routers import DefaultRouter
 
@@ -23,4 +23,5 @@ urlpatterns=[
     path("file/bin/", GetBinFilesAPIView.as_view(), name="get-bin-files"),
     path("file/unsaved/<int:file_id>/", NotSaveFileAPIView.as_view(), name="unsaved-files"),
     path("getAllfiles/",GetAllFileData.as_view(),name="getfiles"),
+    path("ask/", AskQuestionAPIView.as_view(), name="ask-question"),
     ]

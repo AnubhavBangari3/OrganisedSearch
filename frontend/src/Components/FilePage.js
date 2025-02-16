@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useCookies } from "react-cookie";
 import { useParams } from "react-router-dom";
 import Main from "./Main";
+import AskQuestionModal from "./AskQuestionModal";
+import Button from '@mui/material/Button';
 
 export default function FilePage() {
   const { id } = useParams();
+  const [showModal, setShowModal] = useState(false);
   const [fileData, setFileData] = useState("");
   const [fileName, setFileName] = useState("");
   const [fileType, setFileType] = useState("");
@@ -109,7 +112,7 @@ export default function FilePage() {
   return (
     <div>
       <Main />
-      <h2>File ID: {id}</h2>
+
       <h2>
         <b>Search Query: {searchQuery}</b>
       </h2>
@@ -118,6 +121,12 @@ export default function FilePage() {
           Press <span style={{ color: "red" }}>Enter</span> to navigate through matches!
         </b>
       </p>
+      <div>
+      <Button color="secondary" onClick={() => setShowModal(true)}>Ask a Question</Button>
+ 
+
+        {showModal && <AskQuestionModal fileId={id} onClose={() => setShowModal(false)} />}
+      </div>
 
       <div>
         <h1>{fileName.split("/").pop()}</h1>
