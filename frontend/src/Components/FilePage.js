@@ -3,11 +3,13 @@ import { useCookies } from "react-cookie";
 import { useParams } from "react-router-dom";
 import Main from "./Main";
 import AskQuestionModal from "./AskQuestionModal";
+import AskChatbot from "./AskChatbot"; 
 import Button from '@mui/material/Button';
 
 export default function FilePage() {
   const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
   const [fileData, setFileData] = useState("");
   const [fileName, setFileName] = useState("");
   const [fileType, setFileType] = useState("");
@@ -126,7 +128,12 @@ export default function FilePage() {
  
 
         {showModal && <AskQuestionModal fileId={id} onClose={() => setShowModal(false)} />}
+
+        <Button color="primary" onClick={() => setShowChatbot(true)}>Ask Chatbot</Button>
+        {showChatbot && <AskChatbot fileId={id} onClose={() => setShowChatbot(false)} />}
+          
       </div>
+      
 
       <div>
         <h1>{fileName.split("/").pop()}</h1>

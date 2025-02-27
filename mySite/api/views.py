@@ -30,7 +30,7 @@ from sentence_transformers import SentenceTransformer
 from django.shortcuts import get_object_or_404 
 import docx  
 from sklearn.metrics.pairwise import cosine_similarity
-
+import re
 # Create your views here.
 
 class MoveToBinAPIView(APIView):
@@ -386,10 +386,84 @@ class AskQuestionAPIView(APIView):
             "answer": result["answer"],
             "score": result["score"],
         })    
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+##Need to add code to search and extract context
+tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
+# Ensure the tokenizer has a padding token
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
+class AskQuestionChatBotAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile = Profile.objects.get(username_id=request.user.id)
+        user_input = request.data.get("message", "").strip()
+        file_id = request.data.get("file_id")
+
+        if not user_input or not file_id:
+            return Response({"error": "Both question and file ID are required"}, status=400)
+
+        # Get the file object
+        file_obj = get_object_or_404(UploadFile, id=file_id, postUser=profile)
+        file_path = file_obj.file.path
+        file_extension = os.path.splitext(file_path)[1].lower()
+
+        # Extract text from the file
+        if file_extension == ".pdf":
+            context = extract_pdf_text(file_path)
+        elif file_extension == ".docx":
+            context = extract_docx_text(file_path)
+        elif file_extension == ".xlsx":
+            context = extract_xlsx_data(file_path)
+        elif file_extension in [".txt", ".csv", ".json", ".log"]:
+            with open(file_path, "r", encoding="utf-8") as f:
+                context = f.read()
+        else:
+            return Response({"error": "Unsupported file format"}, status=400)
+
+        if not context:
+            return Response({"error": "File content is empty"}, status=400)
+
+        # Search for user input in the extracted text
+        user_input_lower = user_input.lower()
+        context_lower = context.lower()
+
+        index = context_lower.find(user_input_lower)
+        if index != -1:
+            start_index = max(0, index - 500)  
+            end_index = min(len(context), index + len(user_input) + 500)  
+            extracted_text = context[start_index:end_index]
+        else:
+            extracted_text = context[-3000:]  # If not found, use the last 3000 characters
+
+        # Encode input text properly
+        input_text = user_input + " " + extracted_text  
+
+        # Truncate input text to leave room for the model to generate new tokens
+        encoding = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=512, padding="max_length")
+
+        # Ensure correct data format
+        input_ids = encoding["input_ids"]
+        attention_mask = encoding["attention_mask"]
+
+        # Generate response (disable gradient calculation)
+        with torch.no_grad():
+            chat_history_ids = model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=512,  # Allow the model to generate up to 512 new tokens
+                pad_token_id=tokenizer.pad_token_id  # Explicitly use pad_token_id
+            )
+
+        # Decode response
+        response_text = tokenizer.decode(chat_history_ids[0], skip_special_tokens=True)
+
+        return Response({"response": response_text})
 
 
-
-import re
 class SearchFiles(APIView):
     permission_classes = [IsAuthenticated]
     nlp = spacy.load("en_core_web_md")
