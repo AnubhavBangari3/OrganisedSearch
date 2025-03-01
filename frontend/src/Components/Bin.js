@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { useCookies } from "react-cookie";
-import Main from './Main'
-
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-
+import Main from "./Main";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Typography,
+  Box, // Import the Box component
+  Snackbar,
+  Alert,
+} from "@mui/material";
 
 export default function Bin() {
   const [token] = useCookies(["access_token"]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchBinFiles = async () => {
       try {
         const response = await fetch("http://127.0.0.1:8000/file/bin/", {
           headers: {
-            Authorization: `Bearer ${token["access_token"]}`, // Ensure authentication
+            Authorization: `Bearer ${token["access_token"]}`,
           },
         });
 
@@ -30,6 +36,7 @@ export default function Bin() {
         const data = await response.json();
         setFiles(data);
       } catch (error) {
+        setError("Failed to fetch bin files. Please try again.");
         console.error("Error fetching bin files:", error);
       } finally {
         setLoading(false);
@@ -37,48 +44,72 @@ export default function Bin() {
     };
 
     fetchBinFiles();
-  }, []);
+  }, [token]);
 
   return (
     <div>
-      <Main/>
-    
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="deleted files table">
-        <TableHead>
-          <TableRow>
-            <TableCell><b>Deleted File</b></TableCell>
-            <TableCell align="right"><b>Deleted At</b></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={2} align="center">
-                Loading...
-              </TableCell>
-            </TableRow>
-          ) : files.length > 0 ? (
-            files.map((file) => (
-              <TableRow key={file.id}>
-                <TableCell component="th" scope="row">
-                  <a href={`http://127.0.0.1:8000${file.fileB}`} target="_blank" rel="noopener noreferrer">
-                    {file.fileB.split("/").pop()}
-                  </a>
-                </TableCell>
-                <TableCell align="right">{new Date(file.deleted_at).toLocaleString()}</TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={2} align="center">
-                No deleted files found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+      <Main />
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Deleted Files
+        </Typography>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : files.length > 0 ? (
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="deleted files table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <b>Deleted File</b>
+                  </TableCell>
+                  <TableCell align="right">
+                    <b>Deleted At</b>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {files.map((file) => (
+                  <TableRow key={file.id} hover>
+                    <TableCell component="th" scope="row">
+                      <a
+                        href={`http://127.0.0.1:8000${file.fileB}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        {file.fileB.split("/").pop()}
+                      </a>
+                    </TableCell>
+                    <TableCell align="right">
+                      {new Date(file.deleted_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ textAlign: "center", mt: 4 }}>
+            <Typography variant="h6" color="textSecondary">
+              No deleted files found.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Error Snackbar */}
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          onClose={() => setError(null)}
+        >
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        </Snackbar>
+      </Box>
     </div>
-  )
+  );
 }

@@ -6,6 +6,8 @@ import AskQuestionModal from "./AskQuestionModal";
 import AskChatbot from "./AskChatbot"; 
 import Button from '@mui/material/Button';
 
+import { Card, CardContent, Typography } from "@mui/material";
+
 export default function FilePage() {
   const { id } = useParams();
   const [showModal, setShowModal] = useState(false);
@@ -115,30 +117,34 @@ export default function FilePage() {
     <div>
       <Main />
 
-      <h2>
+      <Typography variant="h5" className="search-query">
         <b>Search Query: {searchQuery}</b>
-      </h2>
-      <p>
-        <b>
-          Press <span style={{ color: "red" }}>Enter</span> to navigate through matches!
-        </b>
-      </p>
-      <div>
-      <Button color="secondary" onClick={() => setShowModal(true)}>Ask a Question</Button>
- 
+      </Typography>
+      <Typography variant="body1" className="search-instructions">
+        Press <span className="highlight">Enter</span> to navigate through matches!
+      </Typography>
+      <div className="action-buttons">
+        <Button variant="contained" color="secondary" onClick={() => setShowModal(true)}>
+          Ask a Question
+        </Button>
+
+        <Button variant="contained" color="primary" onClick={() => setShowChatbot(true)}>
+          Ask Chatbot
+        </Button>
 
         {showModal && <AskQuestionModal fileId={id} onClose={() => setShowModal(false)} />}
-
-        <Button color="primary" onClick={() => setShowChatbot(true)}>Ask Chatbot</Button>
         {showChatbot && <AskChatbot fileId={id} onClose={() => setShowChatbot(false)} />}
-          
       </div>
       
 
-      <div>
-        <h1>{fileName.split("/").pop()}</h1>
-        <pre style={{ whiteSpace: "pre-wrap" }}>{fileData}</pre>
-      </div>
+      <Card className="file-card">
+        <CardContent>
+          <Typography variant="h4" className="file-title">
+            {fileName.split("/").pop()}
+          </Typography>
+          <pre className="file-content">{fileData}</pre>
+        </CardContent>
+      </Card>
 
       <style>
         {`

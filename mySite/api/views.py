@@ -119,7 +119,7 @@ class PostFile(APIView):
                 ##print("serializer 2:",serializer)
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
             
-model = SentenceTransformer('all-MiniLM-L6-v2')
+senmodel = SentenceTransformer('all-MiniLM-L6-v2')
 
 class GetAllFileData(APIView):
     permission_classes = [IsAuthenticated]
@@ -246,7 +246,7 @@ class GetAllFile(APIView):
         if not file_texts:
             return []
 
-        file_embeddings = model.encode(file_texts)  # Get embeddings
+        file_embeddings = senmodel.encode(file_texts)  # Get embeddings
         similarity_matrix = cosine_similarity(file_embeddings)
 
         similar_files = []
