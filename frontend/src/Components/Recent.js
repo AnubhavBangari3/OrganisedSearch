@@ -117,82 +117,92 @@ export default function Recent() {
 
   //for modal end
 
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/getfiles/", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token["access_token"]}`,
-          },
-        });
-  
-        if (!response.ok) {
-          throw new Error("Failed to fetch files");
-        }
-  
-        const data = await response.json();
-        setSimilarFiles(data.similar_files);
-        setFiles(data.files); // Store fetched files in the state
-      } catch (error) {
-        console.error("Error fetching files:", error);
-        // Optionally, you could set an error state to display an error message
-      } 
-    };
+  const fetchFiles = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/getfiles/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token["access_token"]}`,
+        },
+      });
 
-    const fetchFilesData = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/getAllfiles/", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token["access_token"]}`,
-          },
-        });
-  
-        if (!response.ok) {
-          throw new Error("Failed to fetch files");
-        }
-  
-        const data = await response.json();
-        console.log("Fetched files:", data);
-        setfilesData(data); // Store fetched files in the state
-      } catch (error) {
-        console.error("Error fetching files:", error);
-        // Optionally, you could set an error state to display an error message
-      } 
-    };
+      if (!response.ok) {
+        throw new Error("Failed to fetch files");
+      }
+
+      const data = await response.json();
+      setSimilarFiles(data.similar_files);
+      setFiles(data.files); // Store fetched files in the state
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      // Optionally, you could set an error state to display an error message
+    } 
+  };
+
+  const fetchFilesData = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/getAllfiles/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token["access_token"]}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch files");
+      }
+
+      const data = await response.json();
+      console.log("Fetched files:", data);
+      setfilesData(data); // Store fetched files in the state
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      // Optionally, you could set an error state to display an error message
+    } 
+  };
+  const [refresh, setRefresh] = useState(false);
+  useEffect(() => {
+    
     fetchFilesData();
     fetchFiles();
     
-  }, [token]);
+  }, [token,refresh]);
 
-
-    // Function to mark a file as saved
-    const handleSaveFile = async (fileId) => {
-      try {
+  // Function to toggle the saved state of a file
+  const handleSaveFile = async (fileId) => {
+    try {
         const response = await fetch(`http://127.0.0.1:8000/file/save/${fileId}/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token["access_token"]}`,
-          },
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token["access_token"]}`,
+            },
         });
-  
+
         if (!response.ok) {
-          throw new Error("Failed to save file");
+            throw new Error(`Failed to save file: ${response.statusText}`);
         }
-  
+
+        const data = await response.json();
+
+        // Update the saved state using the API response
         setFiles((prevFiles) =>
-          prevFiles.map((file) =>
-            file.id === fileId ? { ...file, saved: true } : file
-          )
+            prevFiles.map((file) =>
+                file.id === fileId ? { ...file, saved: data.saved } : file
+            )
         );
-      } catch (error) {
+
+        setRefresh(prev => !prev);
+
+       
+    } catch (error) {
         console.error("Error saving file:", error);
-      }
-    };
+    }
+};
+
+
   
     // Function to move a file to the bin
     const handleMoveToBin = async (fileId) => {
@@ -210,6 +220,7 @@ export default function Recent() {
         }
   
         setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
+        setRefresh((prev) => !prev); 
       } catch (error) {
         console.error("Error moving file to bin:", error);
       }
@@ -375,17 +386,17 @@ export default function Recent() {
               <a style={{'color':'black'}}  href={`http://127.0.0.1:8000/${file.file}`}
               target="_blank" rel="noopener noreferrer"> <ListItemText primary={file.file.split("/").pop()} /></a>
 
-              <ListItemIcon>
+            <ListItemIcon>
                 <FontAwesomeIcon
-                icon={isHovered[`${file.id}-heart`] ? faSolidHeart : faRegularHeart}
-                size="2x"
-                color="red"
-                style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
-                onClick={() => handleSaveFile(file.id)}
-                onMouseEnter={() => handleMouseEnter(file.id, "heart")}
-                onMouseLeave={() => handleMouseLeave(file.id, "heart")}
+                    icon={file.saved ? faSolidHeart : faRegularHeart} // Solid heart if saved, otherwise regular
+                    size="2x"
+                    color={file.saved ? "red" : "grey"} // Red if saved, grey if not
+                    style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
+                    onClick={() => handleSaveFile(file.id)} // Simplified call
+                    onMouseEnter={() => handleMouseEnter(file.id, "heart")}
+                    onMouseLeave={() => handleMouseLeave(file.id, "heart")}
                 />
-              </ListItemIcon>
+            </ListItemIcon>
               
               
             </ListItem>

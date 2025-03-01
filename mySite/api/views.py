@@ -65,17 +65,24 @@ class SaveFileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, file_id):
-        profile=Profile.objects.get(username_id=request.user.id)
+        try:
+            profile = Profile.objects.get(username_id=request.user.id)
+        except Profile.DoesNotExist:
+            return Response({"error": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
         try:
             file = UploadFile.objects.get(id=file_id, postUser=profile)
-            file.saved = True  # Mark the file as saved
+            file.saved = not file.saved  # Toggle the saved status
             file.save()
 
-            return Response({"message": "File marked as saved."}, status=status.HTTP_200_OK)
+            status_message = "File marked as saved." if file.saved else "File marked as unsaved."
+            return Response({
+                "message": status_message,
+                "saved": file.saved
+            }, status=status.HTTP_200_OK)
 
         except UploadFile.DoesNotExist:
             return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
-        
 class NotSaveFileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
