@@ -362,7 +362,7 @@ export default function Recent() {
  
                <ListItemIcon>
                 <FontAwesomeIcon
-                icon={isHoveredH[`${file.id}-trash`] ? faSolidEye : faRegularCan}
+                icon={isHoveredH[`${file.id}-trash`] ? faSolidCan : faRegularCan}
                 size="2x"
                 color="black"
                 style={{ paddingLeft: "6px", transition: "color 0.3s ease-in-out" }}
