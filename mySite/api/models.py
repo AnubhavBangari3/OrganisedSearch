@@ -55,6 +55,9 @@ class Bin(models.Model):
     fileB = models.FileField(upload_to="ProfileFiles/Bin")
     deleted_at = models.DateTimeField(auto_now_add=True)  # Track when the file was deleted
 
+    class Meta:
+        ordering = ['-deleted_at'] 
+
     def __str__(self):
         return f"Deleted: {self.fileB} by {self.postUserB}"
     
