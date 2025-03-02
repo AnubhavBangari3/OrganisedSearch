@@ -1,8 +1,7 @@
 import React,{useState,useEffect} from 'react';
 import {useCookies} from 'react-cookie';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
+import { Box, Button, TextField, Typography, Card, CardContent, CardActions, Divider, Alert  } from "@mui/material";
+
 import {useHistory} from 'react-router-dom';
 
 
@@ -45,6 +44,7 @@ export default function Login() {
                 else{
                         setUsername('');
                         setPassword('');
+                        setLoginError(true);
                 }
               
                
@@ -53,25 +53,70 @@ export default function Login() {
 
   return (
           <div className="login">
-                   
-                    <Box>
-                    <h1>Login Page</h1>
+                 <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="100vh"
+                sx={{ backgroundColor: "#f5f5f5", padding: 2 }}
+            >
+                <Card sx={{ maxWidth: 400, padding: 3, boxShadow: 3, borderRadius: 2 }}>
+                    <CardContent>
+                        <Typography variant="h4" component="h1" align="center" gutterBottom>
+                            Login Page
+                        </Typography>
+                        <Divider sx={{ marginBottom: 3 }} />
+                        
+                        {loginError && (
+                            <Alert severity="error" sx={{ marginBottom: 2 }}>
+                                Incorrect username or password. Please try again.
+                            </Alert>
+                        )}
 
-                    <TextField id="form1" fullWidth label="Username" id="Username" value={username}
-          onChange={e => setUsername(e.target.value)} />
-
-                    <TextField id="form1" type="password" fullWidth label="Password" id="Password"  value={password}
-          onChange={e => setPassword(e.target.value)}/>
-
-        {(username && password)?<Button variant="outlined" id="loginbtn" onClick={loginBtn}><b>LOGIN</b></Button>:
-          <Button><b>Please fill the details</b></Button>}
-
-        <br/>
-        <Button variant="outlined" id="registerpagebtn" color="success" onClick={() => 
-        {history.push('/register/')
-            window.location.reload()}}>Register</Button>
-            
-        </Box>
+                        <TextField
+                            fullWidth
+                            label="Username"
+                            variant="outlined"
+                            margin="normal"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Password"
+                            type="password"
+                            variant="outlined"
+                            margin="normal"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </CardContent>
+                    <CardActions sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            onClick={loginBtn}
+                            disabled={!username || !password}
+                            sx={{ padding: 1 }}
+                        >
+                            <b>LOGIN</b>
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="success"
+                            fullWidth
+                            onClick={() => {
+                                history.push("/register/");
+                                window.location.reload();
+                            }}
+                            sx={{ padding: 1 }}
+                        >
+                            Register
+                        </Button>
+                    </CardActions>
+                </Card>
+            </Box>
           </div>
   )
 }
